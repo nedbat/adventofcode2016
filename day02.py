@@ -11,9 +11,18 @@ KEYS = [
 ]
 
 class Keypad:
-    def __init__(self, keys, start_position):
+    def __init__(self, keys, start_key):
         self.keys = keys
-        self.position = start_position
+        self.position = self.find_key(start_key)
+
+    def find_key(self, key):
+        for row_num, row in enumerate(self.keys):
+            try:
+                col_num = row.index(key)
+            except ValueError:
+                continue
+            else:
+                return (col_num, row_num)
 
     def current_key(self):
         return self.keys[self.position[1]][self.position[0]]
@@ -28,7 +37,9 @@ class Keypad:
         delta = deltas[direction]
         new_pos0 = self.position[0] + delta[0]
         new_pos1 = self.position[1] + delta[1]
-        if 0 <= new_pos0 < len(self.keys[0]) and 0 <= new_pos1 < len(self.keys):
+        new_pos0_ok = 0 <= new_pos0 < len(self.keys[0])
+        new_pos1_ok = 0 <= new_pos1 < len(self.keys)
+        if new_pos0_ok and new_pos1_ok and self.keys[new_pos1][new_pos0]:
             self.position = (new_pos0, new_pos1)
 
     def moves(self, directions):
@@ -40,7 +51,7 @@ class Keypad:
 
 class Keypad1thru9(Keypad):
     def __init__(self):
-        super().__init__(KEYS, (1, 1))
+        super().__init__(KEYS, "5")
 
 
 def test_keypad_construction():
