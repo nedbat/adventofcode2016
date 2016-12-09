@@ -4,12 +4,6 @@
 
 import pytest
 
-KEYS = [
-    ["1", "2", "3"],
-    ["4", "5", "6"],
-    ["7", "8", "9"],
-]
-
 class Keypad:
     def __init__(self, keys, start_key):
         self.keys = keys
@@ -39,7 +33,7 @@ class Keypad:
         new_pos1 = self.position[1] + delta[1]
         new_pos0_ok = 0 <= new_pos0 < len(self.keys[0])
         new_pos1_ok = 0 <= new_pos1 < len(self.keys)
-        if new_pos0_ok and new_pos1_ok and self.keys[new_pos1][new_pos0]:
+        if new_pos0_ok and new_pos1_ok and self.keys[new_pos1][new_pos0] != " ":
             self.position = (new_pos0, new_pos1)
 
     def moves(self, directions):
@@ -50,23 +44,30 @@ class Keypad:
 
 
 class Keypad1thru9(Keypad):
+    KEYS = [
+        "123",
+        "456",
+        "789",
+    ]
+
     def __init__(self):
-        super().__init__(KEYS, "5")
+        super().__init__(self.KEYS, "5")
 
 
 def test_keypad_construction():
     kp = Keypad1thru9()
     assert kp.current_key() == "5"
 
+SAMPLE_MOVES = """
+    ULL
+    RRDDD
+    LURDL
+    UUUUD
+    """
+
 def test_keypad_movement():
     kp = Keypad1thru9()
-    moves = """
-        ULL
-        RRDDD
-        LURDL
-        UUUUD
-        """
-    kp.moves(moves)
+    kp.moves(SAMPLE_MOVES)
     assert kp.current_key() == "5"
     kp.moves("RD")
     assert kp.current_key() == "9"
@@ -78,18 +79,11 @@ def keypad_code_keys(keypad, directions):
         keypad.moves(line)
         yield keypad.current_key()
 
-def keypad_code(directions):
-    kp = Keypad1thru9()
-    return "".join(keypad_code_keys(kp, directions))
+def keypad_code(keypad, directions):
+    return "".join(keypad_code_keys(keypad, directions))
 
 def test_keypad_code():
-    moves = """
-        ULL
-        RRDDD
-        LURDL
-        UUUUD
-        """
-    assert keypad_code(moves) == "1985"
+    assert keypad_code(Keypad1thru9(), SAMPLE_MOVES) == "1985"
 
 the_document_you_found_at_the_front_desk = """
 LDUDDRUDRRURRRRDRUUDULDLULRRLLLUDDULRDLDDLRULLDDLRUURRLDUDDDDLUULUUDDDDLLLLLULLRURDRLRLRLLURDLLDDUULUUUUDLULLRLUUDDLRDRRURRLURRLLLRRDLRUDURRLRRRLULRDLUDRDRLUDDUUULDDDDDURLDULLRDDRRUDDDDRRURRULUDDLLRRDRURDLLLLLUUUDLULURLULLDRLRRDDLUDURUDRLRURURLRRDDLDUULURULRRLLLDRURDULRDUURRRLDLDUDDRLURRDRDRRLDLRRRLRURDRLDRUDLURRUURDLDRULULURRLDLLLUURRULUDDDRLDDUDDDRRLRDUDRUUDDULRDDULDDURULUDLUDRUDDDLRRRRRDLULDRLRRRRUULDUUDRRLURDLLUUDUDDDLUUURDRUULRURULRLLDDLLUDLURRLDRLDDDLULULLURLULRDLDRDDDLRDUDUURUUULDLLRDRUDRDURUUDDLRRRRLLLUULURRURLLDDLDDD
@@ -99,4 +93,22 @@ LRRLLRURUURRDLURRULDDDLURDUURLLDLRRRRULUUDDLULLDLLRDLUDUULLUDRLLDRULDDURURDUUULR
 DDLRRULRDURDURULLLLRLDDRDDRLLURLRDLULUDURRLUDLDUDRDULDDULURDRURLLDRRLDURRLUULLRUUDUUDLDDLRUUDRRDDRLURDRUDRRRDRUUDDRLLUURLURUDLLRRDRDLUUDLUDURUUDDUULUURLUDLLDDULLUURDDRDLLDRLLDDDRRDLDULLURRLDLRRRLRRURUUDRLURURUULDURUDRRLUDUDLRUDDUDDRLLLULUDULRURDRLUURRRRDLLRDRURRRUURULRUDULDULULUULULLURDUDUDRLDULDRDDULRULDLURLRLDDDDDDULDRURRRRDLLRUDDRDDLUUDUDDRLLRLDLUDRUDULDDDRLLLLURURLDLUUULRRRUDLLULUUULLDLRLDLLRLRDLDULLRLUDDDRDRDDLULUUR
 """
 
-print(f"Puzzle 1: the bathroom code is {keypad_code(the_document_you_found_at_the_front_desk)}")
+print(f"Puzzle 1: the bathroom code is {keypad_code(Keypad1thru9(), the_document_you_found_at_the_front_desk)}")
+
+
+class KeypadDiamond(Keypad):
+    KEYS = [
+        "  1  ",
+        " 234 ",
+        "56789",
+        " ABC ",
+        "  D  ",
+    ]
+
+    def __init__(self):
+        super().__init__(self.KEYS, "5")
+
+def test_diamond_code():
+    assert keypad_code(KeypadDiamond(), SAMPLE_MOVES) == "5DB3"
+
+print(f"Puzzle 2: the bathroom code is {keypad_code(KeypadDiamond(), the_document_you_found_at_the_front_desk)}")
