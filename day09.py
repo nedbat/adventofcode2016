@@ -8,8 +8,7 @@ import pytest
 
 AXB = re.compile(r"\((\d+)x(\d+)\)")
 
-def decompress(s):
-    out = []
+def ops(s):
     i = 0
     while i < len(s):
         c = s[i]
@@ -21,11 +20,19 @@ def decompress(s):
             repeat = int(m.group(2))
             chunk = s[i:i+length]
             i += length
-            out.append(chunk * repeat)
+            yield ('repeat', chunk, repeat)
         else:
             if not c.isspace():
-                out.append(c)
+                yield ('char', c)
             i += 1
+
+def decompress(s):
+    out = []
+    for op in ops(s):
+        if op[0] == 'repeat':
+            out.append(op[1] * op[2])
+        elif op[0] == 'char':
+            out.append(op[1])
     return ''.join(out)
 
 @pytest.mark.parametrize("s, res", [
@@ -52,22 +59,11 @@ def decompress2(s):
 
 def decompress2_length(s):
     total = 0
-    i = 0
-    while i < len(s):
-        c = s[i]
-        if c == '(':
-            m = AXB.match(s, i)
-            assert m
-            i += m.end() - m.start()
-            length = int(m.group(1))
-            repeat = int(m.group(2))
-            chunk = s[i:i+length]
-            i += length
-            total += decompress2_length(chunk) * repeat
-        else:
-            if not c.isspace():
-                total += 1
-            i += 1
+    for op in ops(s):
+        if op[0] == 'repeat':
+            total += decompress2_length(op[1]) * op[2]
+        elif op[0] == 'char':
+            total += 1
     return total
 
 @pytest.mark.parametrize("s, res", [
