@@ -1,6 +1,11 @@
 #!/usr/bin/env python3.6
 #
 # http://adventofcode.com/2016/day/10
+#
+# Things I liked about this solution:
+#
+# * Bot.gives_to is a pair of lists, and so treats other bot's .chips list and
+#   the output bins uniformly.
 
 import collections
 import re

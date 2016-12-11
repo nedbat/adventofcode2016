@@ -1,6 +1,11 @@
 #!/usr/bin/env python3.6
 #
 # http://adventofcode.com/2016/day/7
+#
+# Things I liked about this solution:
+#
+# * I learned about using lookahead assertions as a way to find overlapping
+#   regex matches.
 
 import re
 
