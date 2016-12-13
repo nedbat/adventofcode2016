@@ -3,6 +3,7 @@
 # http://adventofcode.com/2016/day/11
 
 import collections
+import itertools
 import textwrap
 
 import pytest
@@ -14,6 +15,9 @@ class Floors:
 
         # Where each thing is: maps "AG" to a floor number.
         self.things = dict(things)
+
+        # The previous state.
+        self.previous = None
 
         # Check that we got a valid set of things.
         # There should be two of each element.
@@ -32,6 +36,14 @@ class Floors:
 
     def __hash__(self):
         return hash((self.elevator, tuple(self.things.items())))
+
+    def steps_from_start(self):
+        steps = 0
+        here = self
+        while here.previous:
+            here = here.previous
+            steps += 1
+        return steps
 
     def floor_contents(self):
         """Return a list of four sets, the contents of the four floors."""
@@ -58,6 +70,10 @@ class Floors:
 
         return True
 
+    def is_finished(self):
+        """We're done if everything is on the fourth floor."""
+        return all(v == 4 for v in self.things.values())
+
     def show(self):
         """Return a multi-line string drawing the floors."""
         num_things = len(self.things)
@@ -70,6 +86,35 @@ class Floors:
         lines[self.elevator-1][1] = 'E '
         return "\n".join(reversed([' '.join(l).strip() for l in lines]))
 
+    def copy(self):
+        new = Floors(self.things)
+        new.elevator = self.elevator
+        return new
+
+    def next_states(self):
+        """Produce new Floors reachable one move from here."""
+        this_floor = self.floor_contents()[self.elevator-1]
+
+        # Possibilities to move: each thing by itself, and things in pairs.
+        movables = [[t] for t in this_floor]
+        movables.extend(itertools.combinations(this_floor, 2))
+
+        for things in movables:
+            new_floors = []
+            if self.elevator > 1:
+                new_floors.append(self.elevator - 1)
+            if self.elevator < 4:
+                new_floors.append(self.elevator + 1)
+
+            for new_floor in new_floors:
+                # Try moving them up.
+                new = self.copy()
+                new.elevator = new_floor
+                for thing in things:
+                    new.things[thing] = new_floor
+                if new.is_valid():
+                    new.previous = self
+                    yield new
 
 SAMPLE_DATA = {
     "HM": 1, "LM": 1,
@@ -127,6 +172,12 @@ def test_floors_is_valid(things):
             F2 .  HG .  .  .
             F1 E  .  HM .  LM
             """),
+    (PUZZLE_INPUT, """\
+            F4 .  .  .  .  .  .  .  .  .  .  .
+            F3 .  .  .  .  .  .  .  .  .  .  TM
+            F2 .  CG CM .  .  RG RM .  .  TG .
+            F1 E  .  .  PG PM .  .  SG SM .  .
+            """),
 ])
 def test_show_floors(things, output):
     floors = Floors(things)
@@ -141,8 +192,53 @@ def test_equality(things1, things2, equal):
 
 @pytest.mark.parametrize("thingss, num_different", [
     ([SAMPLE_DATA, SAMPLE_DATA], 1),
+    ([PUZZLE_INPUT, PUZZLE_INPUT], 1),
     ([SAMPLE_DATA, PUZZLE_INPUT], 2),
 ])
 def test_hash(thingss, num_different):
     s = set(Floors(t) for t in thingss)
     assert len(s) == num_different
+
+def test_next_states():
+    floors = Floors(PUZZLE_INPUT)
+    floors.elevator = 2
+    assert len(set(floors.next_states())) == 7
+
+
+def find_finish(floors):
+    """Find a way to the finish."""
+    to_try = [floors]
+    seen = set([floors])
+    for gen in itertools.count(start=1):
+        next_to_try = []
+        for floors in to_try:
+
+            #print("="*80)
+            #print("Looking at:")
+            #print(floors.show())
+
+            for next_floors in floors.next_states():
+                #print("-"*40)
+                #print(next_floors.show())
+                if next_floors not in seen:
+                    seen.add(next_floors)
+                    if next_floors.is_finished():
+                        return next_floors
+                    else:
+                        next_to_try.append(next_floors)
+        print(f"Gen {gen}, seen {len(seen)} states")
+        to_try = next_to_try
+
+finish = find_finish(Floors(SAMPLE_DATA))
+print(f"Found a sample finish in {finish.steps_from_start()} steps")
+
+if 0:
+    print("*"*40)
+    finish = find_finish(Floors(PUZZLE_INPUT))
+    print(f"Found a puzzle 1 finish in {finish.steps_from_start()} steps")
+
+PUZZLE2_INPUT = dict(PUZZLE_INPUT, **{"DM": 1, "DG": 1, "EM": 1, "EG": 1})
+if 1:
+    print("*"*40)
+    finish = find_finish(Floors(PUZZLE2_INPUT))
+    print(f"Found a puzzle 2 finish in {finish.steps_from_start()} steps")
