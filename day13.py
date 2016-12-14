@@ -48,8 +48,13 @@ def neighbors(x, y):
 def test_neighbors(x, y, res):
     assert set(neighbors(x, y)) == res
 
-def walk_maze(favorite, target):
-    """Returns a list of spots visited while getting to target."""
+def walk_maze(favorite, target=None, distance=None):
+    """Returns a list of spots visited while getting to target, or going distance.
+
+    OK, gross: it returns different things depending on if you specify target
+    or distance...
+
+    """
 
     start = (1, 1)
     leaves = [start]
@@ -66,23 +71,34 @@ def walk_maze(favorite, target):
                 if next_pos in visited:
                     continue
                 path = visited[pos] + [next_pos]
-                if next_pos == target:
+                if target is not None and next_pos == target:
                     return path
                 visited[next_pos] = path
-                next_leaves.append(next_pos)
+                if distance is None or len(path)-1 < distance:
+                    next_leaves.append(next_pos)
         leaves = next_leaves
+
+    if distance is not None:
+        return len(visited)
 
 def test_walk_maze():
     # The sample.
-    assert walk_maze(10, (7, 4)) == [
+    assert walk_maze(10, target=(7, 4)) == [
         (1, 1), (1, 2), (2, 2), (3, 2), (3, 3), (3, 4), (4, 4),
         (4, 5), (5, 5), (6, 5), (6, 4), (7, 4)
     ]
 
 
+INPUT = 1362
+
 def puzzle1():
-    path = walk_maze(1362, (31, 39))
+    path = walk_maze(INPUT, target=(31, 39))
     print(f"It took {len(path)-1} steps to reach (31, 39)")
 
-puzzle1()
+def puzzle2():
+    locations = walk_maze(INPUT, distance=50)
+    print(f"I visited {locations} locations in at most 50 steps")
 
+if __name__ == "__main__":
+    puzzle1()
+    puzzle2()
