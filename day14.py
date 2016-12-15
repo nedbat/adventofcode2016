@@ -107,5 +107,31 @@ def puzzle1():
     complete = complete_keys(INPUT, hashes)
     print(f"Puzzle 1: the 64th key is at index {complete[63]}")
 
+
+def stretched_hashes(salt):
+    """Produce the stretched hashes of salt+0, salt+1, ..."""
+    for i in itertools.count():
+        val = hashlib.md5(f"{salt}{i}".encode("ascii")).hexdigest()
+        for _ in range(2016):
+            val = hashlib.md5(val.encode("ascii")).hexdigest()
+        yield i, val
+
+def test_stretched_hashes():
+    assert next(stretched_hashes("abc")) == (0, "a107ff634856bb300138cac6568c0f24")
+
+def test_complete_keys_stretched():
+    # The sample from the problem.
+    complete = complete_keys("abc", stretched_hashes)
+    assert len(complete) == 64
+    assert complete[0] == 10
+    assert complete[63] == 22551
+
+
+def puzzle2():
+    complete = complete_keys(INPUT, stretched_hashes)
+    print(f"Puzzle 2: the 64th key is at index {complete[63]}")
+
+
 if __name__ == "__main__":
     puzzle1()
+    puzzle2()
