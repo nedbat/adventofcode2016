@@ -70,7 +70,7 @@ def test_peekable():
     assert p.peek(1) == 3
 
 
-def key_indexes(salt):
+def key_indexes(salt, hashes):
     """Produce successive key indexes from salt."""
     p = PeekableIterator(hashes(salt))
     for index, hash in p:
@@ -85,16 +85,16 @@ def key_indexes(salt):
                     yield index
 
 def test_key_indexes():
-    ki = key_indexes("abc")
+    ki = key_indexes("abc", hashes)
     assert next(ki) == 39
 
-def complete_keys(salt):
+def complete_keys(salt, hashes):
     """Return a list of 64 key indexes for salt."""
-    return list(itertools.islice(key_indexes(salt), 64))
+    return list(itertools.islice(key_indexes(salt, hashes), 64))
 
 def test_complete_keys():
     # The sample from the problem.
-    complete = complete_keys("abc")
+    complete = complete_keys("abc", hashes)
     assert len(complete) == 64
     assert complete[0] == 39
     assert complete[1] == 92
@@ -104,7 +104,7 @@ def test_complete_keys():
 INPUT = 'zpqevtbw'
 
 def puzzle1():
-    complete = complete_keys(INPUT)
+    complete = complete_keys(INPUT, hashes)
     print(f"Puzzle 1: the 64th key is at index {complete[63]}")
 
 if __name__ == "__main__":
