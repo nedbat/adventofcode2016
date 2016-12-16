@@ -122,5 +122,9 @@ INPUT = "10011111011011001"
 def puzzle1():
     print(f"Puzzle 1: the checksum is {disk_checksum(INPUT, 272)}")
 
+def puzzle2():
+    print(f"Puzzle 2: the checksum is {disk_checksum(INPUT, 35651584)}")
+
 if __name__ == "__main__":
     puzzle1()
+    puzzle2()
