@@ -74,14 +74,18 @@ def test_dragon_recursive_generator(s, n, d):
 
 
 def dragon_infinite(seed):
+    """Generate characters of dragon forever."""
     yield from seed
     for level in itertools.count():
         yield "0"
         yield from dragon_recursive_generator(seed, level, reverse=True)
 
+def dragon_finite(seed, length):
+    return "".join(itertools.islice(dragon_infinite(seed), length))
+
 @pytest.mark.parametrize("s, n, d", DRAGON_TESTS)
-def test_dragon_infinite(s, n, d):
-    assert "".join(itertools.islice(dragon_infinite(s), len(d))) == d
+def test_dragon_finite(s, n, d):
+    assert dragon_finite(s, len(d)) == d
 
 
 def pairs(s):
@@ -106,5 +110,17 @@ def test_checksum():
     assert checksum("110010110100") == "100"
 
 
-def disk_checksum(initial, length):
-    pass
+def disk_checksum(seed, length):
+    return checksum(dragon_finite(seed, length))
+
+def test_disk_checksum():
+    assert disk_checksum("10000", 20) == "01100"
+
+
+INPUT = "10011111011011001"
+
+def puzzle1():
+    print(f"Puzzle 1: the checksum is {disk_checksum(INPUT, 272)}")
+
+if __name__ == "__main__":
+    puzzle1()
