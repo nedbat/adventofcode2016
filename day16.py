@@ -69,3 +69,29 @@ def dragon_recursive_generator(seed, level, reverse=False):
 @pytest.mark.parametrize("s, n, d", DRAGON_TESTS)
 def test_dragon_recursive_generator(s, n, d):
     assert "".join(dragon_recursive_generator(s, n)) == d
+
+
+def pairs(s):
+    """Yield successive two-character strings"""
+    for i in range(0, len(s), 2):
+        yield s[i:i+2]
+
+@pytest.mark.parametrize("s, res", [
+    ("abcdef", ["ab", "cd", "ef"]),
+])
+def test_pairs(s, res):
+    assert list(pairs(s)) == res
+
+
+def checksum(s):
+    check = s
+    while len(check) % 2 == 0:
+        check = "".join("1" if a == b else "0" for a, b in pairs(check))
+    return check
+
+def test_checksum():
+    assert checksum("110010110100") == "100"
+
+
+def disk_checksum(initial, length):
+    pass
