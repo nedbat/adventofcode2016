@@ -16,12 +16,6 @@ def test_swap01(s, r):
     assert swap01(s) == r
 
 
-def dragon1(seed, level):
-    if level == 0:
-        return seed
-    d = dragon1(seed, level-1)
-    return d + "0" + swap01(d)[::-1]
-
 DRAGON_TESTS = [
     ("1", 1, "100"),
     ("0", 1, "001"),
@@ -33,27 +27,45 @@ DRAGON_TESTS = [
     ("1", 5, "100011001001110010001101100111001000110010011101100011011001110"),
 ]
 
+def dragon_iterative(seed, level):
+    d = seed
+    while level > 0:
+        d = d + "0" + swap01(d)[::-1]
+        level -= 1
+    return d
+
 @pytest.mark.parametrize("s, n, d", DRAGON_TESTS)
-def test_dragon1(s, n, d):
-    assert dragon1(s, n) == d
+def test_dragon_iterative(s, n, d):
+    assert dragon_iterative(s, n) == d
 
 
-def dragon2(seed, level, reverse=False):
+def dragon_recursive(seed, level):
+    if level == 0:
+        return seed
+    d = dragon_recursive(seed, level-1)
+    return d + "0" + swap01(d)[::-1]
+
+@pytest.mark.parametrize("s, n, d", DRAGON_TESTS)
+def test_dragon_recursive(s, n, d):
+    assert dragon_recursive(s, n) == d
+
+
+def dragon_recursive_generator(seed, level, reverse=False):
     if reverse:
         if level == 0:
             yield from swap01(seed)[::-1]
         else:
-            yield from dragon2(seed, level-1, reverse=not reverse)
+            yield from dragon_recursive_generator(seed, level-1, reverse=not reverse)
             yield "1"
-            yield from dragon2(seed, level-1, reverse=reverse)
+            yield from dragon_recursive_generator(seed, level-1, reverse=reverse)
     else:
         if level == 0:
             yield from seed
         else:
-            yield from dragon2(seed, level-1, reverse=reverse)
+            yield from dragon_recursive_generator(seed, level-1, reverse=reverse)
             yield "0"
-            yield from dragon2(seed, level-1, reverse=not reverse)
+            yield from dragon_recursive_generator(seed, level-1, reverse=not reverse)
 
 @pytest.mark.parametrize("s, n, d", DRAGON_TESTS)
-def test_dragon2(s, n, d):
-    assert "".join(dragon2(s, n)) == d
+def test_dragon_recursive_generator(s, n, d):
+    assert "".join(dragon_recursive_generator(s, n)) == d
