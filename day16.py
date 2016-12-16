@@ -2,6 +2,8 @@
 #
 # http://adventofcode.com/2016/day/16
 
+import itertools
+
 import pytest
 
 
@@ -69,6 +71,17 @@ def dragon_recursive_generator(seed, level, reverse=False):
 @pytest.mark.parametrize("s, n, d", DRAGON_TESTS)
 def test_dragon_recursive_generator(s, n, d):
     assert "".join(dragon_recursive_generator(s, n)) == d
+
+
+def dragon_infinite(seed):
+    yield from seed
+    for level in itertools.count():
+        yield "0"
+        yield from dragon_recursive_generator(seed, level, reverse=True)
+
+@pytest.mark.parametrize("s, n, d", DRAGON_TESTS)
+def test_dragon_infinite(s, n, d):
+    assert "".join(itertools.islice(dragon_infinite(s), len(d))) == d
 
 
 def pairs(s):
