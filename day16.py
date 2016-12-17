@@ -7,15 +7,18 @@ import itertools
 import pytest
 
 
-def swap01(s):
-    return s.replace('0', '*').replace('1', '0').replace('*', '1')
+ZERO_ONE = str.maketrans("01", "10")
+
+def reverse01(s):
+    """Reverse a string, and change 0 to 1 and vice-versa."""
+    return s.translate(ZERO_ONE)[::-1]
 
 @pytest.mark.parametrize("s, r", [
-    ("0000", "1111"),
-    ("01001", "10110"),
+    ("1000", "1110"),
+    ("01001", "01101"),
 ])
-def test_swap01(s, r):
-    assert swap01(s) == r
+def test_reverse01(s, r):
+    assert reverse01(s) == r
 
 
 DRAGON_TESTS = [
@@ -29,11 +32,11 @@ DRAGON_TESTS = [
     ("1", 5, "100011001001110010001101100111001000110010011101100011011001110"),
 ]
 
-def dragon_iterative(seed, level):
+def dragon_iterative(seed, steps):
     d = seed
-    while level > 0:
-        d = d + "0" + swap01(d)[::-1]
-        level -= 1
+    while steps > 0:
+        d = d + "0" + reverse01(d)
+        steps -= 1
     return d
 
 @pytest.mark.parametrize("s, n, d", DRAGON_TESTS)
@@ -41,32 +44,32 @@ def test_dragon_iterative(s, n, d):
     assert dragon_iterative(s, n) == d
 
 
-def dragon_recursive(seed, level):
-    if level == 0:
+def dragon_recursive(seed, steps):
+    if steps == 0:
         return seed
-    d = dragon_recursive(seed, level-1)
-    return d + "0" + swap01(d)[::-1]
+    d = dragon_recursive(seed, steps-1)
+    return d + "0" + reverse01(d)
 
 @pytest.mark.parametrize("s, n, d", DRAGON_TESTS)
 def test_dragon_recursive(s, n, d):
     assert dragon_recursive(s, n) == d
 
 
-def dragon_recursive_generator(seed, level, reverse=False):
+def dragon_recursive_generator(seed, steps, reverse=False):
     if reverse:
-        if level == 0:
-            yield from swap01(seed)[::-1]
+        if steps == 0:
+            yield from reverse01(seed)
         else:
-            yield from dragon_recursive_generator(seed, level-1, reverse=not reverse)
+            yield from dragon_recursive_generator(seed, steps-1, reverse=not reverse)
             yield "1"
-            yield from dragon_recursive_generator(seed, level-1, reverse=reverse)
+            yield from dragon_recursive_generator(seed, steps-1, reverse=reverse)
     else:
-        if level == 0:
+        if steps == 0:
             yield from seed
         else:
-            yield from dragon_recursive_generator(seed, level-1, reverse=reverse)
+            yield from dragon_recursive_generator(seed, steps-1, reverse=reverse)
             yield "0"
-            yield from dragon_recursive_generator(seed, level-1, reverse=not reverse)
+            yield from dragon_recursive_generator(seed, steps-1, reverse=not reverse)
 
 @pytest.mark.parametrize("s, n, d", DRAGON_TESTS)
 def test_dragon_recursive_generator(s, n, d):
@@ -76,9 +79,9 @@ def test_dragon_recursive_generator(s, n, d):
 def dragon_infinite(seed):
     """Generate characters of dragon forever."""
     yield from seed
-    for level in itertools.count():
+    for steps in itertools.count():
         yield "0"
-        yield from dragon_recursive_generator(seed, level, reverse=True)
+        yield from dragon_recursive_generator(seed, steps, reverse=True)
 
 def dragon_finite(seed, length):
     return "".join(itertools.islice(dragon_infinite(seed), length))
