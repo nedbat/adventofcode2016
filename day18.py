@@ -50,5 +50,9 @@ INPUT = '.^..^....^....^^.^^.^.^^.^.....^.^..^...^^^^^^.^^^^.^.^^^^^^^.^^^^^..^.
 def puzzle1():
     print(f"Puzzle 1: there are {count_safe_tiles(INPUT, 40)} safe tiles.")
 
+def puzzle2():
+    print(f"Puzzle 2: there are {count_safe_tiles(INPUT, 400000)} safe tiles.")
+
 if __name__ == "__main__":
     puzzle1()
+    puzzle2()
