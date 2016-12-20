@@ -47,6 +47,9 @@ class NumRanges:
     def first(self):
         return self.ranges[0][0]
 
+    def __len__(self):
+        return sum(high-low+1 for low, high in self.ranges)
+
 @pytest.mark.parametrize("clips, result", [
     ([(10, 20)], [(0, 9), (21, 100)]),
     ([(10, 20), (15, 30)], [(0, 9), (31, 100)]),
@@ -77,5 +80,17 @@ def puzzle1():
         answer = first_open(finput)
     print(f"Puzzle 1: the first open IP is {answer}")
 
+def num_open(lines):
+    nr = NumRanges(4294967295)
+    for pair in int_pairs(lines):
+        nr.remove(*pair)
+    return len(nr)
+
+def puzzle2():
+    with open("day20_input.txt") as finput:
+        answer = num_open(finput)
+    print(f"Puzzle 2: there are {answer} open IPs")
+
 if __name__ == "__main__":
     puzzle1()
+    puzzle2()
