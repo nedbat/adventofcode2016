@@ -34,8 +34,15 @@ def test_clip_range(r0, r1, c0, c1, result):
 
 
 class NumRanges:
-    def __init__(self, highest):
+    def __init__(self, highest=4294967295):
         self.ranges = [(0, highest)]
+
+    @classmethod
+    def from_lines(cls, lines):
+        ranges = cls()
+        for pair in int_pairs(lines):
+            ranges.remove(*pair)
+        return ranges
 
     def remove(self, low, high):
         """Remove low..high from the ranges."""
@@ -66,9 +73,7 @@ def test_remove(clips, result):
 
 
 def first_open(lines):
-    nr = NumRanges(4294967295)
-    for pair in int_pairs(lines):
-        nr.remove(*pair)
+    nr = NumRanges.from_lines(lines)
     return nr.first()
 
 def test_first_open():
@@ -81,9 +86,7 @@ def puzzle1():
     print(f"Puzzle 1: the first open IP is {answer}")
 
 def num_open(lines):
-    nr = NumRanges(4294967295)
-    for pair in int_pairs(lines):
-        nr.remove(*pair)
+    nr = NumRanges.from_lines(lines)
     return len(nr)
 
 def puzzle2():
