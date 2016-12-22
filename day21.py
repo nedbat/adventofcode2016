@@ -48,6 +48,8 @@ class Scrambler:
     ]
 
     def execute(self, instructions, s):
+        if self.unscramble:
+            instructions = reversed(list(instructions))
         self.text = list(s)
         for instruction in instructions:
             for pat, opfn, types in self.OPS:
@@ -56,7 +58,7 @@ class Scrambler:
                     continue
                 args = [typefn(t) for typefn, t in zip(types, m.groups())]
                 getattr(self, opfn)(*args)
-                print(f"After {opfn} {args}: {s}")
+                print(f"After {opfn} {args}: {self.text}")
         return "".join(self.text)
 
 SAMPLE_INSTRUCTIONS = """\
@@ -71,7 +73,10 @@ rotate based on position of letter d
 """
 
 def test_execute():
-    assert Scrambler().execute(SAMPLE_INSTRUCTIONS.splitlines(), "abcde") == "decab"
+    assert Scrambler().execute(SAMPLE_INSTRUCTIONS.splitlines(), "abcde") == "decab" "x"
+
+def test_unscramble():
+    assert Scrambler(unscramble=True).execute(SAMPLE_INSTRUCTIONS.splitlines(), "decab") == "abcde"
 
 def puzzle1():
     start = "abcdefgh"
@@ -84,7 +89,7 @@ def puzzle2():
     start = "fbgdceah"
     REVERSE = True
     with open("day21_input.txt") as finput:
-        answer = execute(reversed(list(finput)), start)
+        answer = Scrambler(unscramble=True).execute(finput, start)
     print(f"Puzzle 2: the result of unscrambling {start} is {answer}")
 
 if __name__ == "__main__":
