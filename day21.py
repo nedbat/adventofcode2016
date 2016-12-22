@@ -6,6 +6,8 @@ import re
 
 import pytest
 
+REVERSE = False
+
 def swap_position(s, x, y):
     s[x], s[y] = s[y], s[x]
     return s
@@ -15,7 +17,10 @@ def swap_letter(s, a, b):
 
 def rotate_steps(s, right_left, x):
     x %= len(s)
-    if right_left == "right":
+    right = right_left == "right"
+    if REVERSE:
+        right = not right
+    if right:
         x = -x
     s = s[x:] + s[:x]
     return s
@@ -73,8 +78,17 @@ def puzzle1():
         answer = execute(finput, start)
     print(f"Puzzle 1: the result of scrambling {start} is {answer}")
 
+def puzzle2():
+    global REVERSE  # ick
+    start = "fbgdceah"
+    REVERSE = True
+    with open("day21_input.txt") as finput:
+        answer = execute(reversed(list(finput)), start)
+    print(f"Puzzle 2: the result of unscrambling {start} is {answer}")
+
 if __name__ == "__main__":
     puzzle1()
+    puzzle2()
 
 
 
