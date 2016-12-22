@@ -36,8 +36,8 @@ class Scrambler:
             elif i == 0:
                 steps = 1
             else:
-                steps = (i//2)+1
-            self.rotate_steps("left", steps)
+                steps = ((i+len(self.text))//2)+1
+            self.rotate_steps("right", steps)
         else:
             self.rotate_steps("right", 1 + i + (1 if i >= 4 else 0))
         # new position: 2x+1 or 2x+2
@@ -70,6 +70,8 @@ class Scrambler:
         self.text[x:y+1] = reversed(self.text[x:y+1])
 
     def move(self, x, y):
+        if self.unscramble:
+            x, y = y, x
         self.text.insert(y, self.text.pop(x))
 
     OPS = [
@@ -119,9 +121,7 @@ def puzzle1():
     print(f"Puzzle 1: the result of scrambling {start} is {answer}")
 
 def puzzle2():
-    global REVERSE  # ick
     start = "fbgdceah"
-    REVERSE = True
     with open("day21_input.txt") as finput:
         answer = Scrambler(unscramble=True).execute(finput, start)
     print(f"Puzzle 2: the result of unscrambling {start} is {answer}")
