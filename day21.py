@@ -30,7 +30,41 @@ class Scrambler:
 
     def rotate_position(self, a):
         i = self.text.index(a)
-        self.rotate_steps("right", 1 + i + (1 if i >= 4 else 0))
+        if self.unscramble:
+            if i % 2:
+                steps = (i+1)//2
+            elif i == 0:
+                steps = 1
+            else:
+                steps = (i//2)+1
+            self.rotate_steps("left", steps)
+        else:
+            self.rotate_steps("right", 1 + i + (1 if i >= 4 else 0))
+        # new position: 2x+1 or 2x+2
+        # 
+        # reverse:
+        # if pos is odd:
+        #   2x+1 --> x   newpos is (y-1)/2, so shift left by (x+1)/2
+    """
+        a b c d e f g
+    a   g a b c d e f   1 left 1
+    b   f g a b c d e   3 left 2
+    c   e f g a b c d   5 left 3
+    d   d e f g a b c   0 left 4
+    e   b c d e f g a   3 left 6
+    f   a b c d e f g   5 left 7
+    g   g a b c d e f   0 left 8
+
+        a b c d e f g h
+    a   h a b c d e f g     1 left 1    (x+1)/2
+    b   g h a b c d e f     3 left 2
+    c   f g h a b c d e     5 left 3
+    d   e f g h a b c d     7 left 4
+    e   c d e f g h a b     2 left 6    (x+8)/2+1
+    f   b c d e f g h a     4 left 7
+    g   a b c d e f g h     6 left 0
+    h   h a b c d e f g     0 left 1
+    """
 
     def reverse(self, x, y):
         self.text[x:y+1] = reversed(self.text[x:y+1])
@@ -73,7 +107,7 @@ rotate based on position of letter d
 """
 
 def test_execute():
-    assert Scrambler().execute(SAMPLE_INSTRUCTIONS.splitlines(), "abcde") == "decab" "x"
+    assert Scrambler().execute(SAMPLE_INSTRUCTIONS.splitlines(), "abcde") == "decab"
 
 def test_unscramble():
     assert Scrambler(unscramble=True).execute(SAMPLE_INSTRUCTIONS.splitlines(), "decab") == "abcde"
