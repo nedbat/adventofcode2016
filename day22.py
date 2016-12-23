@@ -11,16 +11,23 @@ import pytest
 
 
 class Node:
-    def __init__(self, x, y, size, used, avail):
+    def __init__(self, x, y, size, used):
         self.x, self.y = x, y
         self.size = size
         self.used = used
-        self.avail = avail
+
+    @property
+    def avail(self):
+        return self.size - self.used
+
+    def __repr__(self):
+        return f"<Node ({self.x}, {self.y})>"
+
 
 def read_nodes(lines):
     nodes = {}
     for line in lines:
-        m = re.search(r"/dev/grid/node-x(\d+)-y(\d+)\s+(\d+)T\s+(\d+)T\s+(\d+)T", line)
+        m = re.search(r"/dev/grid/node-x(\d+)-y(\d+)\s+(\d+)T\s+(\d+)T", line)
         if not m:
             continue
         node = Node(*map(int, m.groups()))
@@ -76,10 +83,14 @@ def nodes_fingerprint(nodes):
 class Walker:
     def __init__(self, nodes, goal, target):
         self.nodes = nodes
+        self.total0 = self.total()
         self.goal = goal
         self.target = target
-        self.minimum = 99999999
+        self.minimum = 100
         self.seen = set()
+
+    def total(self):
+        return sum(n.used for n in self.nodes.values())
 
     def step(self, steps):
         if self.goal == self.target:
@@ -89,7 +100,11 @@ class Walker:
             fingerprint = nodes_fingerprint(self.nodes)
             if fingerprint not in self.seen:
                 self.seen.add(fingerprint)
-                for from_node, to_node in list(possible_moves(self.nodes)):
+                possibles = list(possible_moves(self.nodes))
+                #print(possibles)
+                for from_node, to_node in possibles:
+                    print(f"trying {from_node} -> {to_node}, {steps} steps, {len(self.seen)} seen")
+                    assert self.total() == self.total0
                     # Save and update the goal
                     old_goal = self.goal
                     if from_node == self.goal:
@@ -107,6 +122,7 @@ class Walker:
                     to_node.used -= data_moving
                     from_node.used = data_moving
                     self.goal = old_goal
+                    #print(f"backing up")
 
 walker = Walker(nodes, (maxx, 0), (0, 0))
 print(list(walker.step(0)))
