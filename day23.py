@@ -7,7 +7,7 @@ import pytest
 class Computer:
     def __init__(self, program):
         self.registers = dict.fromkeys("abcd", 0)
-        self.program = program
+        self.program = list(program)
         self.pc = 0
         self.opcodes = 0
 
@@ -35,9 +35,13 @@ class Computer:
         self.registers[target] = val
 
     def inc(self, target):
+        if isinstance(target, int):
+            return
         self.registers[target] += 1
 
     def dec(self, target):
+        if isinstance(target, int):
+            return
         self.registers[target] -= 1
 
     def jnz(self, val, offset):
@@ -61,8 +65,8 @@ class Computer:
             # Do nothing if trying to toggle outside the program.
             return
         inst = self.program[insti]
-        new_inst = [self.TOGGLES[instr[0]]]
-        new_inst.extend(instr[1:])
+        new_inst = [self.TOGGLES[inst[0]]]
+        new_inst.extend(inst[1:])
         self.program[insti] = tuple(new_inst)
 
 cpy, inc, dec, jnz, tgl, a, b, c, d = "cpy inc dec jnz tgl a b c d".split()
