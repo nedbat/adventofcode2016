@@ -13,6 +13,7 @@ class Computer:
 
     def run(self):
         while self.pc < len(self.program):
+            #print(f"Program: {self.pc}: {self.program}\nRegisters: {self.registers}")
             inst = self.program[self.pc]
             op = getattr(self, inst[0])
             new = op(*inst[1:])
@@ -22,9 +23,15 @@ class Computer:
                 self.pc = new
             self.opcodes += 1
 
-    def cpy(self, val, target):
+    def get_val(self, val):
         if isinstance(val, str):
             val = self.registers[val]
+        return val
+
+    def cpy(self, val, target):
+        if isinstance(target, int):
+            return
+        val = self.get_val(val)
         self.registers[target] = val
 
     def inc(self, target):
@@ -34,19 +41,39 @@ class Computer:
         self.registers[target] -= 1
 
     def jnz(self, val, offset):
-        if isinstance(val, str):
-            val = self.registers[val]
+        val = self.get_val(val)
+        offset = self.get_val(offset)
         if val != 0:
             return self.pc + offset
 
-cpy, inc, dec, jnz, a, b, c, d = "cpy inc dec jnz a b c d".split()
+    TOGGLES = {
+        'cpy': 'jnz',
+        'jnz': 'cpy',
+        'inc': 'dec',
+        'dec': 'inc',
+        'tgl': 'inc',
+    }
+
+    def tgl(self, offset):
+        offset = self.get_val(offset)
+        insti = self.pc + offset
+        if insti < 0 or insti >= len(self.program):
+            # Do nothing if trying to toggle outside the program.
+            return
+        inst = self.program[insti]
+        new_inst = [self.TOGGLES[instr[0]]]
+        new_inst.extend(instr[1:])
+        self.program[insti] = tuple(new_inst)
+
+cpy, inc, dec, jnz, tgl, a, b, c, d = "cpy inc dec jnz tgl a b c d".split()
 
 SAMPLE_PROGRAM = [
-    (cpy, 41, a),
-    (inc, a),
-    (inc, a),
+    (cpy, 2, a),
+    (tgl, a),
+    (tgl, a),
+    (tgl, a),
+    (cpy, 1, a),
     (dec, a),
-    (jnz, a, 2),
     (dec, a),
 ]
 
@@ -58,33 +85,37 @@ def sample():
 sample()
 
 PUZZLE_PROGRAM = [
-    (cpy, 1, a),
-    (cpy, 1, b),
-    (cpy, 26, d),
-    (jnz, c, 2),
-    (jnz, 1, 5),
-    (cpy, 7, c),
-    (inc, d),
+    (cpy, a, b),
+    (dec, b),
+    (cpy, a, d),
+    (cpy, 0, a),
+    (cpy, b, c),
+    (inc, a),
     (dec, c),
     (jnz, c, -2),
-    (cpy, a, c),
-    (inc, a),
+    (dec, d),
+    (jnz, d, -5),
     (dec, b),
-    (jnz, b, -2),
-    (cpy, c, b),
+    (cpy, b, c),
+    (cpy, c, d),
     (dec, d),
-    (jnz, d, -6),
-    (cpy, 17, c),
-    (cpy, 18, d),
-    (inc, a),
-    (dec, d),
+    (inc, c),
     (jnz, d, -2),
-    (dec, c),
+    (tgl, c),
+    (cpy, -16, c),
+    (jnz, 1, c),
+    (cpy, 80, c),
+    (jnz, 77, d),
+    (inc, a),
+    (inc, d),
+    (jnz, d, -2),
+    (inc, c),
     (jnz, c, -5),
 ]
 
 def puzzle1():
     comp = Computer(PUZZLE_PROGRAM)
+    comp.registers['a'] = 7
     comp.run()
     print(f"Puzzle 1 leaves {comp.registers['a']} in register a after running {comp.opcodes:,d} opcodes")
 
@@ -92,7 +123,7 @@ puzzle1()
 
 def puzzle2():
     comp = Computer(PUZZLE_PROGRAM)
-    comp.registers['c'] = 1
+    comp.registers['a'] = 12
     comp.run()
     print(f"Puzzle 2 leaves {comp.registers['a']} in register a after running {comp.opcodes:,d} opcodes")
 
