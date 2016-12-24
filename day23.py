@@ -14,6 +14,9 @@ class Computer:
     def run(self):
         while self.pc < len(self.program):
             #print(f"Program: {self.pc}: {self.program}\nRegisters: {self.registers}")
+            if self.optimize():
+                continue
+
             inst = self.program[self.pc]
             op = getattr(self, inst[0])
             new = op(*inst[1:])
@@ -22,6 +25,78 @@ class Computer:
             else:
                 self.pc = new
             self.opcodes += 1
+
+    def optimize(self):
+        inc_dec_reg = self.is_addition_loop()
+        if inc_dec_reg is None:
+            return False
+
+        inc_reg, dec_reg = inc_dec_reg
+        mul_reg = self.is_multiplication_loop(inc_reg, dec_reg)
+        if mul_reg is not None:
+            self.registers[inc_reg] += self.registers[dec_reg] * self.registers[mul_reg]
+            self.registers[dec_reg] = 0
+            self.registers[mul_reg] = 0
+            self.pc += 5
+        else:
+            self.registers[inc_reg] += self.registers[dec_reg]
+            self.registers[dec_reg] = 0
+            self.pc += 3
+        return True
+
+    def is_addition_loop(self):
+        """Are we about to execute an addition loop?
+
+        If no, then return None
+
+        If yes, return two registers, the destination and the source.
+
+        """
+        next_three = self.program[self.pc:self.pc+3]
+        if len(next_three) < 3:
+            return
+        inst0, inst1, inst2 = next_three
+        op0, op1, op2 = inst0[0], inst1[0], inst2[0]
+        if (op0, op1, op2) not in [('inc', 'dec', 'jnz'), ('dec', 'inc', 'jnz')]:
+            return
+
+        if inst2[2] != -2:
+            return
+
+        jnz_reg = inst2[1]
+        dec_reg = (inst0 if op0 == 'dec' else inst1)[1]
+        inc_reg = (inst0 if op0 == 'inc' else inst1)[1]
+        if jnz_reg != dec_reg:
+            return
+        if inc_reg == dec_reg:
+            return
+
+        return inc_reg, dec_reg
+
+    def is_multiplication_loop(self, inc_reg, dec_reg):
+        # It's at least an addition loop. Maybe it's also a multiplication
+        # loop.
+        next_two = self.program[self.pc+3:self.pc+5]
+        if len(next_two) != 2:
+            return
+
+        inst3, inst4 = next_two
+        op3, op4 = inst3[0], inst4[0]
+        if (op3, op4) != ('dec', 'jnz'):
+            return
+
+        if inst4[2] != -5:
+            return
+
+        mul_reg = inst3[1]
+        jnz_reg = inst4[1]
+        if mul_reg != jnz_reg:
+            return
+
+        if mul_reg == inc_reg or mul_reg == dec_reg:
+            return
+
+        return mul_reg
 
     def get_val(self, val):
         if isinstance(val, str):
