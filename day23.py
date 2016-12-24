@@ -34,11 +34,13 @@ class Computer:
         inc_reg, dec_reg = inc_dec_reg
         mul_reg = self.is_multiplication_loop(inc_reg, dec_reg)
         if mul_reg is not None:
+            print(f"Optimization: {self.registers[dec_reg]} * {self.registers[mul_reg]}")
             self.registers[inc_reg] += self.registers[dec_reg] * self.registers[mul_reg]
             self.registers[dec_reg] = 0
             self.registers[mul_reg] = 0
             self.pc += 5
         else:
+            print(f"Optimization: + {self.registers[dec_reg]}")
             self.registers[inc_reg] += self.registers[dec_reg]
             self.registers[dec_reg] = 0
             self.pc += 3
