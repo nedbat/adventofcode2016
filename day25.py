@@ -1,15 +1,18 @@
 #!/usr/bin/env python3.6
 #
-# http://adventofcode.com/2016/day/23
+# http://adventofcode.com/2016/day/25
 
-import pytest
+import itertools
 
 class Computer:
     def __init__(self, program):
         self.registers = dict.fromkeys("abcd", 0)
         self.program = list(program)
         self.pc = 0
-        self.opcodes = 0
+        # A list of: (pc, registers)
+        self.states = []
+        # A list of output.
+        self.output = []
 
     def run(self):
         while self.pc < len(self.program):
@@ -24,7 +27,6 @@ class Computer:
                 self.pc += 1
             else:
                 self.pc = new
-            self.opcodes += 1
 
     def optimize(self):
         inc_dec_reg = self.is_addition_loop()
@@ -34,13 +36,11 @@ class Computer:
         inc_reg, dec_reg = inc_dec_reg
         mul_reg = self.is_multiplication_loop(inc_reg, dec_reg)
         if mul_reg is not None:
-            print(f"Optimization: {self.registers[dec_reg]} * {self.registers[mul_reg]}")
             self.registers[inc_reg] += self.registers[dec_reg] * self.registers[mul_reg]
             self.registers[dec_reg] = 0
             self.registers[mul_reg] = 0
             self.pc += 5
         else:
-            print(f"Optimization: + {self.registers[dec_reg]}")
             self.registers[inc_reg] += self.registers[dec_reg]
             self.registers[dec_reg] = 0
             self.pc += 3
@@ -146,66 +146,57 @@ class Computer:
         new_inst.extend(inst[1:])
         self.program[insti] = tuple(new_inst)
 
-cpy, inc, dec, jnz, tgl, a, b, c, d = "cpy inc dec jnz tgl a b c d".split()
+    def out(self, val):
+        val = self.get_val(val)
+        state = (self.pc, tuple(self.registers[x] for x in "abcd"))
+        if state in self.states:
+            return 99999        # Force an end
+        self.states.append(state)
+        self.output.append(val)
 
-SAMPLE_PROGRAM = [
-    (cpy, 2, a),
-    (tgl, a),
-    (tgl, a),
-    (tgl, a),
-    (cpy, 1, a),
-    (dec, a),
-    (dec, a),
-]
-
-def sample():
-    comp = Computer(SAMPLE_PROGRAM)
-    comp.run()
-    print(f"The sample program leaves {comp.registers['a']} in register a after running {comp.opcodes:,d} opcodes")
-
-sample()
+cpy, inc, dec, jnz, tgl, out, a, b, c, d = "cpy inc dec jnz tgl out a b c d".split()
 
 PUZZLE_PROGRAM = [
-    (cpy, a, b),
-    (dec, b),
     (cpy, a, d),
-    (cpy, 0, a),
-    (cpy, b, c),
-    (inc, a),
-    (dec, c),
-    (jnz, c, -2),
-    (dec, d),
-    (jnz, d, -5),
-    (dec, b),
-    (cpy, b, c),
-    (cpy, c, d),
-    (dec, d),
-    (inc, c),
-    (jnz, d, -2),
-    (tgl, c),
-    (cpy, -16, c),
-    (jnz, 1, c),
-    (cpy, 80, c),
-    (jnz, 77, d),
-    (inc, a),
+    (cpy, 7, c),
+    (cpy, 365, b),
     (inc, d),
-    (jnz, d, -2),
-    (inc, c),
+    (dec, b),
+    (jnz, b, -2),
+    (dec, c),
     (jnz, c, -5),
+    (cpy, d, a),
+    (jnz, 0, 0),
+    (cpy, a, b),
+    (cpy, 0, a),
+    (cpy, 2, c),
+    (jnz, b, 2),
+    (jnz, 1, 6),
+    (dec, b),
+    (dec, c),
+    (jnz, c, -4),
+    (inc, a),
+    (jnz, 1, -7),
+    (cpy, 2, b),
+    (jnz, c, 2),
+    (jnz, 1, 4),
+    (dec, b),
+    (dec, c),
+    (jnz, 1, -4),
+    (jnz, 0, 0),
+    (out, b),
+    (jnz, a, -19),
+    (jnz, 1, -21),
 ]
 
 def puzzle1():
-    comp = Computer(PUZZLE_PROGRAM)
-    comp.registers['a'] = 7
-    comp.run()
-    print(f"Puzzle 1 leaves {comp.registers['a']} in register a after running {comp.opcodes:,d} opcodes")
+    for a in itertools.count(start=1):
+        comp = Computer(PUZZLE_PROGRAM)
+        comp.registers['a'] = a
+        comp.run()
+        output = ' '.join(str(v) for v in comp.output)
+        print(f"a = {a} gives {len(comp.output)} values: {output}")
+        if comp.output == [0, 1]*(len(comp.output)//2):
+            break
 
 puzzle1()
-
-def puzzle2():
-    comp = Computer(PUZZLE_PROGRAM)
-    comp.registers['a'] = 12
-    comp.run()
-    print(f"Puzzle 2 leaves {comp.registers['a']} in register a after running {comp.opcodes:,d} opcodes")
-
-puzzle2()
