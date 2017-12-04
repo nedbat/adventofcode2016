@@ -3,10 +3,12 @@ http://adventofcode.com/2016/day/24
 """
 
 import collections
+import itertools
 import string
 import textwrap
 
 from colorama import Fore, Back, Style
+import pytest
 
 from astar import State, AStar
 
@@ -20,7 +22,7 @@ class Ducts:
         self.visited = collections.defaultdict(int)
 
     @classmethod
-    def read(cls, lines):
+    def read(cls, lines, goals='123456789'):
         self = cls()
         for row, line in enumerate(lines):
             for col, char in enumerate(line):
@@ -31,7 +33,7 @@ class Ducts:
                     continue
                 elif char == '0':
                     self.start = (col, row)
-                else:
+                elif char in goals:
                     self.goals.add((col, row))
         return self
 
@@ -158,16 +160,46 @@ class DuctExplorerState(State):
         self.ducts.visited[self.pos] += 1
 
 
-def test_astar():
-    test_ducts = Ducts.read(textwrap.dedent("""\
+@pytest.mark.parametrize("cost, map", [
+    (14, """\
         ###########
         #0.1.....2#
         #.#######.#
         #4.......3#
         ###########
-        """).splitlines())
-    cost = AStar().search(DuctExplorerState(test_ducts))
-    assert cost == 14
+        """),
+    (3, """\
+        #####
+        #0..#
+        #.#1#
+        #.#.#
+        #.#.#
+        #...#
+        #####
+        """),
+    (4, """\
+        #####
+        #0..#
+        #.#.#
+        #.#.#
+        #.#.#
+        #1..#
+        #####
+        """),
+    (7, """\
+        #######
+        #0....#
+        #.#.#.#
+        #.#...#
+        #.#4###
+        #123###
+        #######
+        """),
+])
+def test_astar(cost, map):
+    test_ducts = Ducts.read(textwrap.dedent(map).splitlines())
+    actual_cost = AStar().search(DuctExplorerState(test_ducts))
+    assert cost == actual_cost
 
 
 if __name__ == '__main__':
@@ -177,5 +209,5 @@ if __name__ == '__main__':
     try:
         cost = AStar().search(DuctExplorerState(ducts))
         print(f"Part 1: fewest steps is {cost}")
-    finally:
+    except:
         print(ducts.show())

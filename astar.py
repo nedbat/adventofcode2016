@@ -48,7 +48,7 @@ class AStar:
         self.costs[state] = cost
         self.candidates.add(state, total_cost)
 
-    def search(self, start_state):
+    def search(self, start_state, log=False):
         inf = float('inf')
         should_log = OnceEvery(seconds=5)
         self.add_candidate(start_state, 0)
@@ -62,7 +62,7 @@ class AStar:
                 cost = self.costs[best]
                 if best.is_goal():
                     return cost
-                if should_log.now():
+                if log and should_log.now():
                     goals = sum(int(s.is_goal()) for s in self.candidates.items)
                     print(f"cost {cost}; {len(self.visited)} visited, {len(self.candidates)} candidates, {goals} goals")
                 self.visited.add(best)
@@ -75,4 +75,5 @@ class AStar:
                         self.add_candidate(nstate, ncost)
                         self.came_from[nstate] = best
         finally:
-            print(f"{len(self.visited)} visited, {len(self.candidates)} candidates remaining")
+            if log:
+                print(f"{len(self.visited)} visited, {len(self.candidates)} candidates remaining")
