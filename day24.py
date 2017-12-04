@@ -142,14 +142,6 @@ class DuctExplorerState(State):
 
     def guess_completion_cost(self):
         return len(self.goals_to_go)
-        if self.goals_to_go:
-            costs = []
-            x, y = self.pos
-            for gx, gy in self.goals_to_go:
-                costs.append(abs(gx - x) + abs(gy - y))
-            return max(costs)
-        else:
-            return 0
 
 
 @pytest.mark.parametrize("cost, map", [
