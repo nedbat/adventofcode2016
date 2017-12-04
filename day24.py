@@ -19,21 +19,19 @@ class Ducts:
         self.goals = set()
         self.start = None
         self.original = set()
-        self.visited = collections.defaultdict(int)
 
     @classmethod
     def read(cls, lines, goals='123456789'):
         self = cls()
         for row, line in enumerate(lines):
             for col, char in enumerate(line):
-                if char == '#':
-                    continue
-                self.locations.add((col, row))
                 if char == '.':
-                    continue
+                    self.locations.add((col, row))
                 elif char == '0':
+                    self.locations.add((col, row))
                     self.start = (col, row)
                 elif char in goals:
+                    self.locations.add((col, row))
                     self.goals.add((col, row))
         return self
 
@@ -48,9 +46,6 @@ class Ducts:
                     char = Back.RED + Fore.WHITE + '@' + Style.RESET_ALL
                 elif (col, row) == self.start:
                     char = Back.GREEN + Fore.WHITE + '0' + Style.RESET_ALL
-                elif (col, row) in self.visited:
-                    visits = min(len(numchars), self.visited[(col, row)])
-                    char = Fore.WHITE + numchars[visits-1] + Style.RESET_ALL
                 elif (col, row) in self.locations:
                     char = '#'
                 elif (col, row) in self.original:
@@ -155,9 +150,6 @@ class DuctExplorerState(State):
             return max(costs)
         else:
             return 0
-
-    def visited(self):
-        self.ducts.visited[self.pos] += 1
 
 
 @pytest.mark.parametrize("cost, map", [

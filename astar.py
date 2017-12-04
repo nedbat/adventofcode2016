@@ -18,10 +18,6 @@ class State:
         """Guess at the cost to reach the goal. Must not overestimate."""
         pass
 
-    def visited(self) -> None:
-        """To inform the state that it's been visited."""
-        pass
-
 
 class OnceEvery:
     """An object whose .now() method is true once every N seconds."""
@@ -66,7 +62,6 @@ class AStar:
                     goals = sum(int(s.is_goal()) for s in self.candidates.items)
                     print(f"cost {cost}; {len(self.visited)} visited, {len(self.candidates)} candidates, {goals} goals")
                 self.visited.add(best)
-                best.visited()
                 for nstate, ncost in best.next_states(cost):
                     if nstate in self.visited:
                         continue
