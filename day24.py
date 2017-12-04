@@ -2,7 +2,11 @@
 http://adventofcode.com/2016/day/24
 """
 
+import collections
+import string
 import textwrap
+
+from colorama import Fore, Back, Style
 
 from astar import State, AStar
 
@@ -13,6 +17,7 @@ class Ducts:
         self.goals = set()
         self.start = None
         self.original = set()
+        self.visited = collections.defaultdict(int)
 
     @classmethod
     def read(cls, lines):
@@ -31,21 +36,25 @@ class Ducts:
         return self
 
     def show(self):
+        numchars = string.ascii_lowercase + string.ascii_uppercase
         out = []
         width = max(col for col, row in self.locations)
         height = max(row for col, row in self.locations)
         for row in range(height+1):
             for col in range(width):
                 if (col, row) in self.goals:
-                    char = '@'
+                    char = Back.RED + Fore.WHITE + '@' + Style.RESET_ALL
                 elif (col, row) == self.start:
-                    char = '0'
+                    char = Back.GREEN + Fore.WHITE + '0' + Style.RESET_ALL
+                elif (col, row) in self.visited:
+                    visits = min(len(numchars), self.visited[(col, row)])
+                    char = Fore.WHITE + numchars[visits-1] + Style.RESET_ALL
                 elif (col, row) in self.locations:
                     char = '#'
                 elif (col, row) in self.original:
                     char = ' '
                 else:
-                    char = '.'
+                    char = Style.DIM + '.' + Style.RESET_ALL
                 out.append(char)
             out.append('\n')
         return ''.join(out)
@@ -93,6 +102,7 @@ if 0:
     print(ducts.show())
     print(len(ducts.locations))
 
+if 0:
     print('-' * 80)
 
     trimmed = ducts.trim()
@@ -130,10 +140,11 @@ class DuctExplorerState(State):
             goals = self.goals_to_go
             if nxy in goals:
                 goals = goals - {nxy}
-            yield DuctExplorerState(self.ducts, nxy, goals), cost + 1
+            nstate = DuctExplorerState(self.ducts, nxy, goals)
+            yield nstate, cost + 1
 
     def guess_completion_cost(self):
-        #return len(self.goals_to_go)
+        return len(self.goals_to_go)
         if self.goals_to_go:
             costs = []
             x, y = self.pos
@@ -142,6 +153,9 @@ class DuctExplorerState(State):
             return max(costs)
         else:
             return 0
+
+    def visited(self):
+        self.ducts.visited[self.pos] += 1
 
 
 def test_astar():
@@ -159,5 +173,9 @@ def test_astar():
 if __name__ == '__main__':
     with open('day24_input.txt') as finput:
         ducts = Ducts.read(finput)
-    cost = AStar().search(DuctExplorerState(ducts))
-    print(f"Part 1: fewest steps is {cost}")
+    ducts = ducts.trim()
+    try:
+        cost = AStar().search(DuctExplorerState(ducts))
+        print(f"Part 1: fewest steps is {cost}")
+    finally:
+        print(ducts.show())
