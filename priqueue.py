@@ -15,32 +15,32 @@ class PriorityQueue:
     def __init__(self):
         self.q = []
         self.counter = itertools.count()
-        self.item_map = {}
+        self.items = {}
 
     def __len__(self):
-        return len(self.item_map)
+        return len(self.items)
 
     def __contains__(self, item):
-        return item in self.item_map
+        return item in self.items
 
     def add(self, item, priority):
         if item in self:
             self.remove(item)
         entry = [priority, next(self.counter), item]
-        self.item_map[item] = entry
+        self.items[item] = entry
         heapq.heappush(self.q, entry)
 
     def remove(self, item):
-        entry = self.item_map.pop(item)
+        entry = self.items.pop(item)
         entry[2] = self.REMOVED
 
     def pop(self):
         while self.q:
             _, _, item = heapq.heappop(self.q)
             if item is not self.REMOVED:
-                del self.item_map[item]
+                del self.items[item]
                 return item
         raise IndexError("Pop from empty priority queue")
 
     def empty(self):
-        return not self.item_map
+        return not self.items
