@@ -49,24 +49,24 @@ class AStar:
         should_log = OnceEvery(seconds=5)
         self.add_candidate(start_state, 0)
         self.came_from[start_state] = None
-        while True:
-            if self.candidates.empty():
-                cost = -1
-                break
-            best = self.candidates.pop()
-            cost = self.costs[best]
-            if should_log.now():
-                print(f"cost {cost}; {len(self.visited)} visited, {len(self.candidates)} candidates")
-            if best.is_goal():
-                break
-            self.visited.add(best)
-            for nstate, ncost in best.next_states(cost):
-                if nstate in self.visited:
-                    continue
-                old_cost = self.costs.get(nstate, inf)
-                if ncost < old_cost:
-                    self.add_candidate(nstate, ncost)
-                    self.came_from[nstate] = best
-
-        print(f"{len(self.visited)} visited, {len(self.candidates)} candidates remaining")
-        return cost
+        try:
+            while True:
+                try:
+                    best = self.candidates.pop()
+                except IndexError:
+                    raise Exception("No solution") from None
+                cost = self.costs[best]
+                if best.is_goal():
+                    return cost
+                if should_log.now():
+                    print(f"cost {cost}; {len(self.visited)} visited, {len(self.candidates)} candidates")
+                self.visited.add(best)
+                for nstate, ncost in best.next_states(cost):
+                    if nstate in self.visited:
+                        continue
+                    old_cost = self.costs.get(nstate, inf)
+                    if ncost < old_cost:
+                        self.add_candidate(nstate, ncost)
+                        self.came_from[nstate] = best
+        finally:
+            print(f"{len(self.visited)} visited, {len(self.candidates)} candidates remaining")
