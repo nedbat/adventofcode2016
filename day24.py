@@ -119,9 +119,6 @@ class DuctExplorerState(State):
             self.goals_to_go == other.goals_to_go
         )
 
-    def __lt__(self, other):
-        return self.pos < other.pos
-
     def is_goal(self):
         # This is a goal state if we have no more goal positions to visit.
         return not self.goals_to_go

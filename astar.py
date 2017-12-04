@@ -3,7 +3,7 @@
 import time
 from typing import Iterator, Tuple
 
-from priqueue import PriQueue
+from priqueue import PriorityQueue
 
 
 class State:
@@ -34,28 +34,26 @@ class OnceEvery:
 
 class AStar:
     def __init__(self):
-        self.candidates = PriQueue()
-        self.candidates_set = set()
+        self.candidates = PriorityQueue()
+        self.costs = {}
         self.visited = set()
         self.came_from = {}
 
-    def queue_state(self, state, cost):
+    def add_candidate(self, state, cost):
         total_cost = cost + state.guess_completion_cost()
-        qentry = (total_cost, cost, state)
-        self.candidates.push(qentry)
+        self.costs[state] = cost
+        self.candidates.add(state, total_cost)
 
     def search(self, start_state):
         should_log = OnceEvery(seconds=5)
-        self.queue_state(start_state, 0)
-        self.candidates_set.add(start_state)
+        self.add_candidate(start_state, 0)
         self.came_from[start_state] = None
         while True:
             if self.candidates.empty():
                 cost = -1
                 break
-            qentry = self.candidates.pop()
-            _, cost, best = qentry
-            self.candidates_set.remove(best)
+            best = self.candidates.pop()
+            cost = self.costs[best]
             if should_log.now():
                 print(f"cost {cost}; {len(self.visited)} visited, {len(self.candidates)} candidates")
             if best.is_goal():
@@ -64,10 +62,9 @@ class AStar:
             for nstate, ncost in best.next_states(cost):
                 if nstate in self.visited:
                     continue
-                if nstate in self.candidates_set:
+                if nstate in self.candidates:
                     continue
-                self.queue_state(nstate, ncost)
-                self.candidates_set.add(nstate)
+                self.add_candidate(nstate, ncost)
                 self.came_from[nstate] = best
 
         print(f"{len(self.visited)} visited, {len(self.candidates)} candidates remaining")
