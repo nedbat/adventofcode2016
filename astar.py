@@ -45,6 +45,7 @@ class AStar:
         self.candidates.add(state, total_cost)
 
     def search(self, start_state):
+        inf = float('inf')
         should_log = OnceEvery(seconds=5)
         self.add_candidate(start_state, 0)
         self.came_from[start_state] = None
@@ -62,10 +63,10 @@ class AStar:
             for nstate, ncost in best.next_states(cost):
                 if nstate in self.visited:
                     continue
-                if nstate in self.candidates:
-                    continue
-                self.add_candidate(nstate, ncost)
-                self.came_from[nstate] = best
+                old_cost = self.costs.get(nstate, inf)
+                if ncost < old_cost:
+                    self.add_candidate(nstate, ncost)
+                    self.came_from[nstate] = best
 
         print(f"{len(self.visited)} visited, {len(self.candidates)} candidates remaining")
         return cost
