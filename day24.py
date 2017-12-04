@@ -137,11 +137,17 @@ class DuctExplorerState(State):
             goals = self.goals_to_go
             if nxy in goals:
                 goals = goals - {nxy}
-            nstate = DuctExplorerState(self.ducts, nxy, goals)
+            nstate = self.__class__(self.ducts, nxy, goals)
             yield nstate, cost + 1
 
     def guess_completion_cost(self):
         return len(self.goals_to_go)
+
+
+class DuctExplorerLoopState(DuctExplorerState):
+    """Insist that the bot return to start."""
+    def is_goal(self):
+        return self.pos == self.ducts.start and super().is_goal()
 
 
 @pytest.mark.parametrize("cost, map", [
@@ -190,8 +196,8 @@ if __name__ == '__main__':
     with open('day24_input.txt') as finput:
         ducts = Ducts.read(finput)
     ducts = ducts.trim()
-    try:
-        cost = AStar().search(DuctExplorerState(ducts))
-        print(f"Part 1: fewest steps is {cost}")
-    except:
-        print(ducts.show())
+    cost = AStar().search(DuctExplorerState(ducts))
+    print(f"Part 1: fewest steps is {cost}")
+
+    cost = AStar().search(DuctExplorerLoopState(ducts))
+    print(f"Part 2: fewest steps is {cost}")
