@@ -5,6 +5,7 @@
 import collections
 import hashlib
 import itertools
+import math
 import re
 
 import pytest
@@ -85,53 +86,41 @@ from astar import State, AStar
 
 
 class MemMoveState(State):
-    def __init__(self, nodes, changes=None, zero_location=None, goal_location=None, steps_hash=0):
+    def __init__(self, nodes, zero_location=None, my_location=None):
         self.nodes = nodes
-        self.changes = changes or {}
-        self.data = collections.ChainMap(self.changes, nodes.data)
-        if goal_location is None:
-            goal_location = (nodes.maxx - 1, 0)
-        self.goal_location = goal_location
+        if my_location is None:
+            my_location = (nodes.maxx - 1, 0)
+        self.my_location = my_location
         if zero_location is None:
             zero_location = next((n.x, n.y) for n in nodes if n.used == 0)
-            print(f"zero is {zero_location}")
         self.zero_location = zero_location
-        self.steps_hash = steps_hash
 
     def __hash__(self):
-        return hash((self.steps_hash, self.goal_location))
+        return hash((self.zero_location, self.my_location))
 
     def __eq__(self, other):
-        return self.changes == other.changes and self.goal_location == other.goal_location
+        return self.zero_location == other.zero_location and self.my_location == other.my_location
 
     def is_goal(self):
-        return self.goal_location == (0, 0)
+        return self.my_location == (0, 0)
 
     def next_states(self, cost):
         for pto, pfrom in adjacent_coords(*self.zero_location, self.nodes.maxx, self.nodes.maxy):
-            size_from = self.data[pfrom]
-            if size_from == 0:
-                continue
-            avail_to = self.nodes[pto].size - self.data[pto]
-            if size_from > avail_to:
+            if self.nodes[pfrom].size > 500:    # hardcoded!
                 continue
 
-            nchanges = dict(self.changes)
-            nchanges.update({pto: self.data[pto] + size_from, pfrom: 0})
+            nmy_location = self.my_location
+            if pfrom == nmy_location:
+                nmy_location = pto
 
-            ngoal_location = self.goal_location
-            if pfrom == ngoal_location:
-                ngoal_location = pto
-
-            nhash = self.steps_hash ^ hash((pfrom, pto, size_from))
-            nstate = MemMoveState(self.nodes, nchanges, pfrom, ngoal_location, nhash)
+            nstate = MemMoveState(self.nodes, pfrom, nmy_location)
             yield nstate, cost + 1
 
     def guess_completion_cost(self):
-        return dist((0, 0), self.goal_location) + dist(self.zero_location, self.goal_location)
+        return dist((0, 0), self.my_location) + dist(self.zero_location, self.my_location)
 
     def summary(self):
-        return f"0 at {self.zero_location}, goal at {self.goal_location}, guess {self.guess_completion_cost()}, {len(self.changes)} changes"
+        return f"0 at {self.zero_location}, me at {self.my_location}, guess {self.guess_completion_cost()}"
 
 
 def dist(pt1, pt2):
