@@ -24,106 +24,150 @@ class Node:
         return f"<Node ({self.x}, {self.y})>"
 
 
-def read_nodes(lines):
-    nodes = {}
-    for line in lines:
-        m = re.search(r"/dev/grid/node-x(\d+)-y(\d+)\s+(\d+)T\s+(\d+)T", line)
-        if not m:
-            continue
-        node = Node(*map(int, m.groups()))
-        nodes[node.x, node.y] = node
-    return nodes
+def range2d(maxx, maxy):
+    for y in range(maxy):
+        for x in range(maxx):
+            yield x, y
+
+def adjacent_coords(x, y, maxx, maxy):
+    if x > 0:
+        yield (x, y), (x - 1, y)
+    if y > 0:
+        yield (x, y), (x, y - 1)
+    if x < maxx - 1:
+        yield (x, y), (x + 1, y)
+    if y < maxy - 1:
+        yield (x, y), (x, y + 1)
+
+def all_adjacent_coords(maxx, maxy):
+    for x, y in range2d(maxx, maxy):
+        yield from adjacent_coords(x, y, maxx, maxy)
+
+class Nodes:
+    def __init__(self):
+        self.nodes = {}
+        self.maxx = 0
+        self.maxy = 0
+
+    def __getitem__(self, key):
+        return self.nodes[key]
+
+    def __iter__(self):
+        return iter(self.nodes.values())
+
+    def read(self, lines):
+        for line in lines:
+            m = re.search(r"/dev/grid/node-x(\d+)-y(\d+)\s+(\d+)T\s+(\d+)T", line)
+            if not m:
+                continue
+            node = Node(*map(int, m.groups()))
+            self.nodes[node.x, node.y] = node
+
+        self.maxx = max(n.x for n in self) + 1
+        self.maxy = max(n.y for n in self) + 1
+        self.data = {(n.x, n.y): n.used for n in self}
+        self.adjacent_coords = list(all_adjacent_coords(self.maxx, self.maxy))
 
 with open("day22_input.txt") as finput:
-    nodes = read_nodes(finput)
+    nodes = Nodes()
+    nodes.read(finput)
 
-print(f"{len(nodes)}")
+print(f"{len(nodes.nodes)}")
 
 viable = []
-for a, b in itertools.product(nodes.values(), repeat=2):
+for a, b in itertools.product(nodes, repeat=2):
     if a is not b and a.used != 0 and a.used <= b.avail:
         viable.append((a, b))
 
-print(f"Puzzle 1: there are {len(viable)} viable pairs")
+print(f"Part 1: there are {len(viable)} viable pairs")
 
-maxx = max(n.x for n in nodes.values())
-maxy = max(n.y for n in nodes.values())
-print(f"maxx is {maxx}, maxy is {maxy}")
+from astar import State, AStar
 
-for y in range(maxy+1):
-    for x in range(maxx+1):
-        empty = nodes[x, y].used == 0
-        c = "_" if empty else "#"
-        print(c, end="")
-    print()
 
-def moves(n1, n2):
-    if n1.used != 0 and n1.used <= n2.avail:
-        yield (n1, n2)
-
-def possible_moves(nodes):
-    for node in nodes.values():
-        if node.x < maxx:
-            other = nodes[node.x+1, node.y]
-            yield from moves(node, other)
-            yield from moves(other, node)
-        if node.y < maxy:
-            other = nodes[node.x, node.y+1]
-            yield from moves(node, other)
-            yield from moves(other, node)
-
-possibles = list(possible_moves(nodes))
-print(f"{len(possibles)} possible moves")
-print(possibles)
-
-def nodes_fingerprint(nodes):
-    canon = sorted((n.x, n.y, n.used) for n in nodes.values())
-    return hashlib.md5(str(canon).encode('ascii')).hexdigest()
-
-class Walker:
-    def __init__(self, nodes, goal, target):
+class MemMoveState(State):
+    def __init__(self, nodes, changes=None, zero_location=None, goal_location=None, steps_hash=0):
         self.nodes = nodes
-        self.total0 = self.total()
-        self.goal = goal
-        self.target = target
-        self.minimum = 100
-        self.seen = set()
+        self.changes = changes or {}
+        self.data = collections.ChainMap(self.changes, nodes.data)
+        if goal_location is None:
+            goal_location = (nodes.maxx - 1, 0)
+        self.goal_location = goal_location
+        if zero_location is None:
+            zero_location = next((n.x, n.y) for n in nodes if n.used == 0)
+            print(f"zero is {zero_location}")
+        self.zero_location = zero_location
+        self.steps_hash = steps_hash
 
-    def total(self):
-        return sum(n.used for n in self.nodes.values())
+    def __hash__(self):
+        return hash((self.steps_hash, self.goal_location))
 
-    def step(self, steps):
-        if self.goal == self.target:
-            self.minimum = steps
-            yield steps
-        elif steps < self.minimum:
-            fingerprint = nodes_fingerprint(self.nodes)
-            if fingerprint not in self.seen:
-                self.seen.add(fingerprint)
-                possibles = list(possible_moves(self.nodes))
-                #print(possibles)
-                for from_node, to_node in possibles:
-                    print(f"trying {from_node} -> {to_node}, {steps} steps, {len(self.seen)} seen")
-                    assert self.total() == self.total0
-                    # Save and update the goal
-                    old_goal = self.goal
-                    if from_node == self.goal:
-                        self.goal = to_node
+    def __eq__(self, other):
+        return self.changes == other.changes and self.goal_location == other.goal_location
 
-                    # Move the data.
-                    data_moving = from_node.used
-                    to_node.used += data_moving
-                    from_node.used = 0
+    def is_goal(self):
+        return self.goal_location == (0, 0)
 
-                    # Continue searching.
-                    yield from self.step(steps+1)
+    def next_states(self, cost):
+        for pto, pfrom in adjacent_coords(*self.zero_location, self.nodes.maxx, self.nodes.maxy):
+            size_from = self.data[pfrom]
+            if size_from == 0:
+                continue
+            avail_to = self.nodes[pto].size - self.data[pto]
+            if size_from > avail_to:
+                continue
 
-                    # Restore the state.
-                    to_node.used -= data_moving
-                    from_node.used = data_moving
-                    self.goal = old_goal
-                    #print(f"backing up")
+            nchanges = dict(self.changes)
+            nchanges.update({pto: self.data[pto] + size_from, pfrom: 0})
 
-walker = Walker(nodes, (maxx, 0), (0, 0))
-print(list(walker.step(0)))
-print(len(walker.seen))
+            ngoal_location = self.goal_location
+            if pfrom == ngoal_location:
+                ngoal_location = pto
+
+            nhash = self.steps_hash ^ hash((pfrom, pto, size_from))
+            nstate = MemMoveState(self.nodes, nchanges, pfrom, ngoal_location, nhash)
+            yield nstate, cost + 1
+
+    def guess_completion_cost(self):
+        return dist((0, 0), self.goal_location) + dist(self.zero_location, self.goal_location)
+
+    def summary(self):
+        return f"0 at {self.zero_location}, goal at {self.goal_location}, guess {self.guess_completion_cost()}, {len(self.changes)} changes"
+
+
+def dist(pt1, pt2):
+    return abs(pt1[0] - pt2[0]) + abs(pt1[1] - pt2[1])
+
+@pytest.mark.parametrize("pt1, pt2, answer", [
+    ((0, 0), (10, 5), 15),
+])
+def test_dist(pt1, pt2, answer):
+    assert dist(pt1, pt2) == answer
+
+
+def steps_to_move_data(nodes):
+    steps = AStar().search(MemMoveState(nodes), log=True)
+    return steps
+
+def test_steps_to_move_data():
+    nodes = Nodes()
+    nodes.read("""\
+Filesystem            Size  Used  Avail  Use%
+/dev/grid/node-x0-y0   10T    8T     2T   80%
+/dev/grid/node-x0-y1   11T    6T     5T   54%
+/dev/grid/node-x0-y2   32T   28T     4T   87%
+/dev/grid/node-x1-y0    9T    7T     2T   77%
+/dev/grid/node-x1-y1    8T    0T     8T    0%
+/dev/grid/node-x1-y2   11T    7T     4T   63%
+/dev/grid/node-x2-y0   10T    6T     4T   60%
+/dev/grid/node-x2-y1    9T    8T     1T   88%
+/dev/grid/node-x2-y2    9T    6T     3T   66%
+""".splitlines())
+    assert steps_to_move_data(nodes) == 7
+
+
+if __name__ == '__main__':
+    with open("day22_input.txt") as finput:
+        nodes = Nodes()
+        nodes.read(finput)
+    steps = steps_to_move_data(nodes)
+    print(f"Part 2: moved the goal data in {steps} steps")

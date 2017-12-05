@@ -18,6 +18,10 @@ class State:
         """Guess at the cost to reach the goal. Must not overestimate."""
         pass
 
+    def summary(self) -> str:
+        """A short summary of the state, for progress logging."""
+        return ""
+
 
 class OnceEvery:
     """An object whose .now() method is true once every N seconds."""
@@ -59,8 +63,7 @@ class AStar:
                 if best.is_goal():
                     return cost
                 if log and should_log.now():
-                    goals = sum(int(s.is_goal()) for s in self.candidates.items)
-                    print(f"cost {cost}; {len(self.visited)} visited, {len(self.candidates)} candidates, {goals} goals")
+                    print(f"cost {cost}; {len(self.visited)} visited, {len(self.candidates)} candidates, {best.summary()}")
                 self.visited.add(best)
                 for nstate, ncost in best.next_states(cost):
                     if nstate in self.visited:
