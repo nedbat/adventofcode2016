@@ -2,10 +2,7 @@
 #
 # http://adventofcode.com/2016/day/22
 
-import collections
-import hashlib
 import itertools
-import math
 import re
 
 import pytest
@@ -16,6 +13,7 @@ class Node:
         self.x, self.y = x, y
         self.size = size
         self.used = used
+        self.movable = True
 
     @property
     def avail(self):
@@ -25,24 +23,15 @@ class Node:
         return f"<Node ({self.x}, {self.y})>"
 
 
-def range2d(maxx, maxy):
-    for y in range(maxy):
-        for x in range(maxx):
-            yield x, y
-
 def adjacent_coords(x, y, maxx, maxy):
     if x > 0:
-        yield (x, y), (x - 1, y)
+        yield (x - 1, y)
     if y > 0:
-        yield (x, y), (x, y - 1)
+        yield (x, y - 1)
     if x < maxx - 1:
-        yield (x, y), (x + 1, y)
+        yield (x + 1, y)
     if y < maxy - 1:
-        yield (x, y), (x, y + 1)
-
-def all_adjacent_coords(maxx, maxy):
-    for x, y in range2d(maxx, maxy):
-        yield from adjacent_coords(x, y, maxx, maxy)
+        yield (x, y + 1)
 
 class Nodes:
     def __init__(self):
@@ -62,18 +51,17 @@ class Nodes:
             if not m:
                 continue
             node = Node(*map(int, m.groups()))
+            node.movable = node.size < 200
             self.nodes[node.x, node.y] = node
 
         self.maxx = max(n.x for n in self) + 1
         self.maxy = max(n.y for n in self) + 1
-        self.data = {(n.x, n.y): n.used for n in self}
-        self.adjacent_coords = list(all_adjacent_coords(self.maxx, self.maxy))
+
 
 with open("day22_input.txt") as finput:
     nodes = Nodes()
     nodes.read(finput)
 
-print(f"{len(nodes.nodes)}")
 
 viable = []
 for a, b in itertools.product(nodes, repeat=2):
@@ -81,6 +69,7 @@ for a, b in itertools.product(nodes, repeat=2):
         viable.append((a, b))
 
 print(f"Part 1: there are {len(viable)} viable pairs")
+
 
 from astar import State, AStar
 
@@ -105,13 +94,13 @@ class MemMoveState(State):
         return self.my_location == (0, 0)
 
     def next_states(self, cost):
-        for pto, pfrom in adjacent_coords(*self.zero_location, self.nodes.maxx, self.nodes.maxy):
-            if self.nodes[pfrom].size > 500:    # hardcoded!
+        for pfrom in adjacent_coords(*self.zero_location, self.nodes.maxx, self.nodes.maxy):
+            if not self.nodes[pfrom].movable:
                 continue
 
             nmy_location = self.my_location
             if pfrom == nmy_location:
-                nmy_location = pto
+                nmy_location = self.zero_location
 
             nstate = MemMoveState(self.nodes, pfrom, nmy_location)
             yield nstate, cost + 1
@@ -134,7 +123,7 @@ def test_dist(pt1, pt2, answer):
 
 
 def steps_to_move_data(nodes):
-    steps = AStar().search(MemMoveState(nodes), log=True)
+    steps = AStar().search(MemMoveState(nodes))
     return steps
 
 def test_steps_to_move_data():
