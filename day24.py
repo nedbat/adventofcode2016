@@ -10,7 +10,7 @@ import textwrap
 from colorama import Fore, Back, Style
 import pytest
 
-from astar import State, AStar
+from astar import State, search
 
 
 class Ducts:
@@ -188,7 +188,7 @@ class DuctExplorerLoopState(DuctExplorerState):
 ])
 def test_astar(cost, map):
     test_ducts = Ducts.read(textwrap.dedent(map).splitlines())
-    actual_cost = AStar().search(DuctExplorerState(test_ducts))
+    actual_cost = search(DuctExplorerState(test_ducts))
     assert cost == actual_cost
 
 
@@ -196,8 +196,8 @@ if __name__ == '__main__':
     with open('day24_input.txt') as finput:
         ducts = Ducts.read(finput)
     ducts = ducts.trim()
-    cost = AStar().search(DuctExplorerState(ducts))
+    cost = search(DuctExplorerState(ducts))
     print(f"Part 1: fewest steps is {cost}")
 
-    cost = AStar().search(DuctExplorerLoopState(ducts))
+    cost = search(DuctExplorerLoopState(ducts))
     print(f"Part 2: fewest steps is {cost}")

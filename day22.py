@@ -71,7 +71,7 @@ for a, b in itertools.product(nodes, repeat=2):
 print(f"Part 1: there are {len(viable)} viable pairs")
 
 
-from astar import State, AStar
+from astar import State, search
 
 
 class MemMoveState(State):
@@ -123,8 +123,7 @@ def test_dist(pt1, pt2, answer):
 
 
 def steps_to_move_data(nodes):
-    steps = AStar().search(MemMoveState(nodes))
-    return steps
+    return search(MemMoveState(nodes))
 
 def test_steps_to_move_data():
     nodes = Nodes()

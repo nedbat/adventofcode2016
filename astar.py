@@ -1,22 +1,26 @@
 """An A* implementation."""
 
+from abc import ABCMeta, abstractmethod
 import time
 from typing import Iterator, Tuple
 
 from priqueue import PriorityQueue
 
 
-class State:
+class State(metaclass=ABCMeta):
     """Abstract interface for a State for AStar."""
+
+    @abstractmethod
     def is_goal(self) -> bool:
-        pass
+        """Is this state a goal state? Are we done?"""
 
+    @abstractmethod
     def next_states(self, cost) -> Iterator[Tuple['State', float]]:
-        pass
+        """Produce a series of next states: (new_state, new_cost), ... """
 
+    @abstractmethod
     def guess_completion_cost(self) -> float:
         """Guess at the cost to reach the goal. Must not overestimate."""
-        pass
 
     def summary(self) -> str:
         """A short summary of the state, for progress logging."""
@@ -75,3 +79,8 @@ class AStar:
         finally:
             if log:
                 print(f"{len(self.visited)} visited, {len(self.candidates)} candidates remaining")
+
+
+def search(start_state, log=False):
+    """Search a state space, starting with `start_state`. Returns the cost to reach the goal."""
+    return AStar().search(start_state, log)
