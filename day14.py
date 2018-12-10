@@ -40,19 +40,20 @@ def test_hashes(salt, first_three):
     assert list(itertools.islice(hashes(salt), 3)) == first_three
 
 
-class PeekableIterator:
+class PeekableIterable:
     def __init__(self, source):
         self.source = iter(source)
         self.lookahead = collections.deque()
 
     def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self.lookahead:
-            return self.lookahead.popleft()
-        else:
-            return next(self.source)
+        while True:
+            if self.lookahead:
+                yield self.lookahead.popleft()
+            else:
+                try:
+                    yield next(self.source)
+                except StopIteration:
+                    return
 
     def peek(self, index):
         assert index > 0
@@ -61,18 +62,22 @@ class PeekableIterator:
         return self.lookahead[index-1]
 
 def test_peekable():
-    p = PeekableIterator(itertools.count())
-    assert next(p) == 0
-    assert next(p) == 1
+    p = PeekableIterable(itertools.count())
+    pi = iter(p)
+    assert next(pi) == 0
+    assert next(pi) == 1
     assert p.peek(1) == 2
     assert p.peek(100) == 101
-    assert next(p) == 2
+    assert next(pi) == 2
     assert p.peek(1) == 3
 
+def test_finite_peekable():
+    p = PeekableIterable(range(3))
+    assert list(p) == [0, 1, 2]
 
 def key_indexes(salt, hashes):
     """Produce successive key indexes from salt."""
-    p = PeekableIterator(hashes(salt))
+    p = PeekableIterable(hashes(salt))
     for index, hash in p:
         t = triple(hash)
         if t:
